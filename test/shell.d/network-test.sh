@@ -189,6 +189,34 @@ assertEqual(
 )
 assert(/function selectByDelta\(delta\) \{\s*\n\s*disarmPointer\(\)/.test(panelSource), 'network disarms the pointer gate when the keyboard moves the cursor')
 
+// The panel enables scanning while it is open, so NetworkManager churns the AP
+// list every couple of seconds. Binding that rebuilt array to ListView.model
+// reset the view and dropped the scroll position each time; rows are also
+// re-sorted by signal strength, so the order moves even when membership does not.
+const wifiEntries = network.wifiRowEntries(rows)
+assertDeepEqual(
+  wifiEntries.map((entry) => entry.key),
+  ['Connected', 'Known', 'Open'],
+  'network keys wifi rows by SSID so a re-sorted row moves instead of resetting'
+)
+assertDeepEqual(
+  wifiEntries.map((entry) => entry.sectionTitle),
+  ['KNOWN NETWORKS', '', 'OTHER NETWORKS'],
+  'network titles only the row that opens each section'
+)
+assertEqual(wifiEntries[0].netSsid, 'Connected', 'network flattens wifi fields into net-prefixed roles')
+assertEqual(network.wifiRowEntries([]).length, 0, 'network tolerates an empty wifi list')
+
+assert(/ListModel \{ id: wifiModel \}/.test(panelSource), 'network keeps the wifi list in a ListModel')
+assert(/model: wifiModel/.test(panelSource), 'network binds the view to the reconciled model')
+assert(!/model: root\.wifiStationAvailable \? root\.wifiNetworks : \[\]/.test(panelSource), 'network never assigns a rebuilt array straight to the view')
+assert(/function onSelectedIndexChanged\(\)/.test(panelSource), 'network drives auto-scroll off the cursor, not off a currentIndex the view can overwrite')
+
+// A reused delegate flips sectionTitle as rows re-sort, so a collapsing child
+// that binds its height back to its own implicitHeight becomes a live binding
+// loop. Column already omits invisible children, so the binding is redundant.
+assert(!/height: visible \? implicitHeight : 0/.test(panelSource), 'network never collapses a row by binding height back to its own implicitHeight')
+
 const wifiRow = network.wifiRow({ connected: true, known: true, name: 'Home', signalStrength: 0.8, security: 1 })
 assertDeepEqual(
   wifiRow,
