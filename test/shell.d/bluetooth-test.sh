@@ -112,6 +112,35 @@ assertEqual(
   'bluetooth keeps deviceName in row projections so labels survive QObject-free rows'
 )
 
+// Binding a rebuilt JS array to ListView.model resets the view and drops the
+// scroll position, and discovery rebuilds that array every few seconds. The
+// panel reconciles a ListModel against these entries instead, keyed so a row
+// that merely re-sorts moves rather than being torn down.
+const scrollRows = [
+  { dev: bluetooth.deviceRow({ name: 'Speaker', address: '2' }), section: 'known', indexInSection: 0 },
+  { dev: bluetooth.deviceRow({ name: 'Mouse', address: '5' }), section: 'known', indexInSection: 1 },
+  { dev: bluetooth.deviceRow({ name: 'Keyboard', address: '3' }), section: 'discovered', indexInSection: 0 }
+]
+const scrollEntries = bluetooth.scrollRowEntries(scrollRows)
+assertDeepEqual(
+  scrollEntries.map((entry) => entry.sectionTitle),
+  ['PAIRED', '', 'AVAILABLE'],
+  'bluetooth titles only the row that opens each section'
+)
+assertDeepEqual(
+  scrollEntries.map((entry) => entry.key),
+  ['known/2', 'known/5', 'discovered/3'],
+  'bluetooth keys scroll rows by section and address so re-sorted rows move instead of resetting'
+)
+assertEqual(scrollEntries[0].devName, 'Speaker', 'bluetooth flattens device fields into dev-prefixed roles')
+assertEqual(scrollEntries[0].devState, -1, 'bluetooth avoids the bare state role that would collide with Item.state')
+assertEqual(bluetooth.scrollRowEntries([]).length, 0, 'bluetooth tolerates an empty scroll list')
+
+assert(/ListModel \{ id: scrollModel \}/.test(panelSource), 'bluetooth keeps the scroll list in a ListModel')
+assert(/model: scrollModel/.test(panelSource), 'bluetooth binds the view to the reconciled model')
+assert(!/model: root\.scrollRows/.test(panelSource), 'bluetooth never assigns a rebuilt array straight to the view')
+assert(/function onScrollRowIndexChanged\(\)/.test(panelSource), 'bluetooth drives auto-scroll off the cursor, not off a currentIndex the view can overwrite')
+
 assertDeepEqual(
   bluetooth.withPendingAction({ a: 'connecting' }, 'b', 'forgetting'),
   { a: 'connecting', b: 'forgetting' },
