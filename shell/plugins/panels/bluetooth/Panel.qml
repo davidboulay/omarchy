@@ -321,9 +321,34 @@ Panel {
     if (changed) pendingActions = next
   }
 
+  // Keyboard navigation scrolls the list under a stationary pointer, so a
+  // delegate slides beneath the cursor and fires containsMouse without the
+  // user having touched the mouse. Ungated, that synthetic hover overwrites
+  // focusSection/selectedIndex and the selection jumps to whichever row
+  // landed under the pointer — reliably near the top, where the pointer sits
+  // after clicking the bar icon. Only bites once the list is long enough to
+  // scroll, because Contain does not move the view until a row is clipped.
+  PointerMoveGate {
+    id: pointerGate
+    referenceItem: keyCatcher
+  }
+
+  function disarmPointer() {
+    pointerGate.reset()
+  }
+
+  function selectFromPointer(section, index, item, mouse) {
+    if (!pointerGate.moved(item, mouse)) return
+    cursorActive = true
+    focusSection = section
+    selectedIndex = index
+    actionFocused = false
+  }
+
   // j/k navigates the hero toggle ("header") and the device sections
   // row-by-row.
   function moveCursor(delta) {
+    disarmPointer()
     var sections = visibleSections
     if (focusSection === "header") {
       if (delta > 0 && sections && sections.length > 0) {
@@ -365,6 +390,7 @@ Panel {
 
   function moveCursorH(delta) {
     if (!cursorActive) { cursorActive = true; return }
+    disarmPointer()
     if (focusSection !== "known" && focusSection !== "connected") return
     var dev = deviceAt(focusSection, selectedIndex)
     if (!dev || !dev.address) return
@@ -464,9 +490,9 @@ Panel {
 
   onSelectedIndexChanged: updateFocusedAddress()
   onFocusSectionChanged: updateFocusedAddress()
-  onConnectedDevicesChanged: { reselectFocusedDevice(); syncPendingActions() }
-  onKnownDevicesChanged: { reselectFocusedDevice(); syncPendingActions() }
-  onDiscoveredDevicesChanged: { reselectFocusedDevice(); syncPendingActions() }
+  onConnectedDevicesChanged: { disarmPointer(); reselectFocusedDevice(); syncPendingActions() }
+  onKnownDevicesChanged: { disarmPointer(); reselectFocusedDevice(); syncPendingActions() }
+  onDiscoveredDevicesChanged: { disarmPointer(); reselectFocusedDevice(); syncPendingActions() }
   onVisibleSectionsChanged: clampCursor()
 
   function clampCursor() {
@@ -937,11 +963,8 @@ Panel {
       acceptedButtons: Qt.LeftButton | Qt.RightButton
       cursorShape: row.dev ? Qt.PointingHandCursor : Qt.ArrowCursor
 
-      onContainsMouseChanged: if (containsMouse) {
-        root.cursorActive = true
-        root.focusSection = row.sectionName
-        root.selectedIndex = row.rowIndex
-        root.actionFocused = false
+      onPositionChanged: function(mouse) {
+        root.selectFromPointer(row.sectionName, row.rowIndex, row, mouse)
       }
 
       onClicked: function(mouse) {

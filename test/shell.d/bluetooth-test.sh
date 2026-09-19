@@ -50,6 +50,15 @@ assert(/sibling\.owesDiscoveryStop = true/.test(stopTimer[0]), 'bluetooth moves 
 assert(/onDiscoveringChanged[\s\S]{0,120}owesDiscoveryStop = false/.test(panelSource), 'bluetooth settles the stop it owes once discovery is confirmed down')
 assert(/Component\.onDestruction: \{[\s\S]{0,400}owesDiscoveryStop = true[\s\S]{0,200}discovering = false/.test(panelSource), 'bluetooth passes the stop it owes to a sibling when an instance is destroyed')
 
+// Keyboard navigation calls positionViewAtIndex, which slides a delegate under
+// a stationary pointer and fires containsMouse. Writing the cursor from that
+// signal let a synthetic hover overwrite the keyboard selection mid-navigation.
+assert(/PointerMoveGate \{\s*\n\s*id: pointerGate/.test(panelSource), 'bluetooth gates row hover behind real pointer movement')
+assert(/onPositionChanged: function\(mouse\) \{\s*\n\s*root\.selectFromPointer\(/.test(panelSource), 'bluetooth moves the cursor from pointer movement, not from hover state')
+assert(!/onContainsMouseChanged:[\s\S]{0,200}root\.selectedIndex = /.test(panelSource), 'bluetooth never sets the cursor straight out of containsMouse')
+assert(/function moveCursor\(delta\) \{\s*\n\s*disarmPointer\(\)/.test(panelSource), 'bluetooth disarms the pointer gate when the keyboard moves the cursor')
+assert(/onDiscoveredDevicesChanged: \{ disarmPointer\(\)/.test(panelSource), 'bluetooth disarms the pointer gate when discovery rebuilds the list')
+
 assert(bluetooth.isUuidLike('0000110b-0000-1000-8000-00805f9b34fb'), 'bluetooth detects UUID-like names')
 assert(bluetooth.isAddressLike('AA:BB:CC:DD:EE:FF'), 'bluetooth detects address-like names')
 assertEqual(bluetooth.normalizedAddress('AA:BB_CC-dd-ee-ff'), 'aabbccddeeff', 'bluetooth normalizes BlueZ and PipeWire address formats')
