@@ -177,6 +177,18 @@ assertDeepEqual(rows.map(row => row.ssid), ['Connected', 'Known', 'Open'], 'netw
 assertEqual(network.wifiSectionTitle(rows, 0), 'KNOWN NETWORKS', 'network labels known wifi section')
 assertEqual(network.wifiSectionTitle(rows, 2), 'OTHER NETWORKS', 'network labels other wifi section')
 
+// Keyboard navigation calls positionViewAtIndex, which slides a row under a
+// stationary pointer and fires containsMouse. Writing the cursor from that
+// signal let a synthetic hover overwrite the keyboard selection mid-navigation.
+assert(/PointerMoveGate \{\s*\n\s*id: pointerGate/.test(panelSource), 'network gates row hover behind real pointer movement')
+assert(!/onContainsMouseChanged:[\s\S]{0,200}root\.selectedIndex = /.test(panelSource), 'network never sets the cursor straight out of containsMouse')
+assertEqual(
+  (panelSource.match(/root\.selectFromPointer\(/g) || []).length,
+  2,
+  'network gates both the row and the forget button'
+)
+assert(/function selectByDelta\(delta\) \{\s*\n\s*disarmPointer\(\)/.test(panelSource), 'network disarms the pointer gate when the keyboard moves the cursor')
+
 const wifiRow = network.wifiRow({ connected: true, known: true, name: 'Home', signalStrength: 0.8, security: 1 })
 assertDeepEqual(
   wifiRow,

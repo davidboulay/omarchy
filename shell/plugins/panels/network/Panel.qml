@@ -392,7 +392,30 @@ Panel {
 
   onWifiNetworkObjectsChanged: syncWifiNetworks()
 
+  // Keyboard navigation scrolls the list under a stationary pointer, so a row
+  // slides beneath the cursor and fires containsMouse without the user having
+  // touched the mouse. Ungated, that synthetic hover overwrites focusSection
+  // and selectedIndex, and the selection jumps to whichever row landed under
+  // the pointer.
+  PointerMoveGate {
+    id: pointerGate
+    referenceItem: keyCatcher
+  }
+
+  function disarmPointer() {
+    pointerGate.reset()
+  }
+
+  function selectFromPointer(index, actionFocused, item, mouse) {
+    if (!pointerGate.moved(item, mouse)) return
+    cursorActive = true
+    focusSection = "wifi"
+    selectedIndex = index
+    wifiActionFocused = actionFocused
+  }
+
   function selectByDelta(delta) {
+    disarmPointer()
     if (wifiNetworks.length === 0) { selectedIndex = -1; return }
     if (selectedIndex < 0) selectedIndex = delta > 0 ? 0 : wifiNetworks.length - 1
     else selectedIndex = Math.max(0, Math.min(wifiNetworks.length - 1, selectedIndex + delta))
@@ -661,6 +684,7 @@ Panel {
     wifiNetworks = Model.sortWifiRows(nets)
     wifiStationAvailable = !!wifiDevice
     scanning = false
+   disarmPointer()
   }
 
   function wifiSectionTitle(index) {
@@ -1058,6 +1082,7 @@ Panel {
           root.cursorActive = true
           if (dy >= 0) return
         }
+        root.disarmPointer()
         if (dy !== 0) {
           // Hidden sections drop out of the keyboard chain entirely.
           if (root.focusSection === "header") {
@@ -1797,7 +1822,7 @@ Panel {
       // Move the cursor here when the mouse enters; mouse leaving doesn't
       // clear it (so the cursor stays where the mouse last was and
       // subsequent j/k pick up from this row).
-      onContainsMouseChanged: if (containsMouse) { root.cursorActive = true; root.focusSection = "wifi"; root.selectedIndex = row.index; root.wifiActionFocused = false }
+      onPositionChanged: function(mouse) { root.selectFromPointer(row.index, false, row, mouse) }
 
       onClicked: {
         if (!row.net) return
@@ -1880,7 +1905,7 @@ Panel {
           acceptedButtons: Qt.LeftButton
           enabled: row.canForget && !root.busy
           cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-          onContainsMouseChanged: if (containsMouse) { root.cursorActive = true; root.focusSection = "wifi"; root.selectedIndex = row.index; root.wifiActionFocused = true }
+          onPositionChanged: function(mouse) { root.selectFromPointer(row.index, true, row, mouse) }
           onClicked: if (row.net) root.forget(row.net)
         }
 
