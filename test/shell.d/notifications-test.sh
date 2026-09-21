@@ -187,6 +187,24 @@ assert(notifications.shouldRenderCompactGlyph('K', '', true), 'notifications ren
 assert(!notifications.shouldRenderCompactGlyph('K', '', false), 'notifications give glyph hints with bodies the large icon slot')
 assert(!notifications.shouldRenderCompactGlyph('K', 'file:///tmp/image.png', true), 'notifications keep image-backed glyph hints in the icon slot')
 
+// A sender that left app_icon empty is matched to a desktop entry by name, by
+// desktop id, or by startup class, so it still gets a face.
+const desktopEntries = [
+  { name: 'Trayscale', id: 'dev.deedles.Trayscale', icon: 'dev.deedles.Trayscale' },
+  { name: 'Solstice', id: 'Solstice', startupClass: 'solstice', icon: 'solstice' },
+  { name: 'Google Chrome', id: 'google-chrome', icon: 'google-chrome' },
+  { name: 'Iconless', id: 'iconless', icon: '' }
+]
+
+assertEqual(notifications.appIconFor('Solstice', desktopEntries), 'solstice', 'notifications find an app icon by display name')
+assertEqual(notifications.appIconFor('trayscale', desktopEntries), 'dev.deedles.Trayscale', 'notifications match app names case-insensitively')
+assertEqual(notifications.appIconFor('dev.deedles.Trayscale', desktopEntries), 'dev.deedles.Trayscale', 'notifications find an app icon by desktop id')
+assertEqual(notifications.appIconFor('Google Chrome', desktopEntries), 'google-chrome', 'notifications match a spaced app name against a hyphenated id')
+assertEqual(notifications.appIconFor('Unknown App', desktopEntries), '', 'notifications leave an unmatched app name without an icon')
+assertEqual(notifications.appIconFor('Iconless', desktopEntries), '', 'notifications skip desktop entries that declare no icon')
+assertEqual(notifications.appIconFor('', desktopEntries), '', 'notifications leave an empty app name without an icon')
+assertEqual(notifications.appIconFor('Solstice', []), '', 'notifications tolerate an empty desktop entry list')
+
 assert(notifications.shouldBypassDnd({ appName: 'omarchy-action', urgency: 1 }, 2), 'omarchy action toasts bypass DND')
 assert(notifications.shouldBypassDnd({ appName: 'notify-send', urgency: 2 }, 2), 'critical notify-send bypasses DND')
 assert(!notifications.shouldBypassDnd({ appName: 'notify-send', urgency: 1 }, 2), 'normal notify-send does not bypass DND')

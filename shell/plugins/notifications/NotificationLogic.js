@@ -446,6 +446,46 @@ function historyRows(raw, liveRows, normalUrgency, limit) {
   return out.slice(0, max)
 }
 
+// The icon of the desktop entry an app_name belongs to, or "" when no entry
+// claims that name.
+//
+// app_icon is optional in the notification spec and plenty of senders leave it
+// empty: libnotify 0.8 stopped passing `notify-send -i` through as app_icon
+// and moved it to a desktop-entry hint, and some apps never set it at all.
+// What such a notification does carry is app_name, and that name is nearly
+// always the Name= of an installed desktop entry, which knows exactly what the
+// app looks like. So the name is looked up rather than left as a blank tile.
+//
+// Three keys per entry, because senders disagree about what app_name means:
+// the display name ("Solstice"), the desktop id ("dev.deedles.Trayscale",
+// whose Name= is the shorter "Trayscale"), and the startup WM class, which is
+// what a sender reaching for "the app's identifier" tends to reach for. A name
+// with spaces is tried hyphenated too, which is how "Google Chrome" finds
+// google-chrome.
+//
+// Deliberately no themed lookup on the name itself when that all misses: an
+// unconstrained theme lookup resolves an app called "Mail" or "Zoom" to a
+// stock action icon, and a confidently wrong face is worse than none.
+function appIconFor(appName, entries) {
+  var wanted = String(appName || "").trim().toLowerCase()
+  if (wanted.length === 0) return ""
+  var hyphenated = wanted.replace(/\s+/g, "-")
+  var list = entries || []
+  for (var i = 0; i < list.length; i++) {
+    var entry = list[i]
+    if (!entry) continue
+    var icon = String(entry.icon || "")
+    if (icon.length === 0) continue
+    var keys = [entry.name, entry.id, entry.startupClass]
+    for (var k = 0; k < keys.length; k++) {
+      var key = String(keys[k] || "").trim().toLowerCase()
+      if (key.length === 0) continue
+      if (key === wanted || key === hyphenated) return icon
+    }
+  }
+  return ""
+}
+
 if (typeof module !== "undefined") {
   module.exports = {
     isChromiumDerived: isChromiumDerived,
@@ -459,6 +499,7 @@ if (typeof module !== "undefined") {
     execArgvFromHints: execArgvFromHints,
     parseExecArgv: parseExecArgv,
     shouldRenderCompactGlyph: shouldRenderCompactGlyph,
+    appIconFor: appIconFor,
     snapshotOf: snapshotOf,
     popupRoles: popupRoles,
     popupRowChanged: popupRowChanged,
