@@ -388,10 +388,14 @@ Item {
       // Notification already torn down by the server — fall through to focus.
       console.warn("invoke default failed:", e)
     }
-    // Chat apps (Slack, Discord, Vesktop, etc.) rarely register a "default"
-    // libnotify action — they just expect clicking the notification to
-    // focus their window. Fall back to focusing the sending app by class so
-    // that click-to-jump actually works.
+    // Reaching here means there was no action to run: either the sender
+    // registered no "default" action, or nothing live is left to invoke —
+    // a restored or history row has no sender even when the original had one.
+    // Not because chat apps skip the action: Slack's Notify carries
+    // actions ["default", "View"], so for the app most often clicked here the
+    // action is present and, while the toast is live, is what opens the
+    // message. Focus the sending app by class instead, which is what a click
+    // on a chat notification is reaching for anyway.
     if (!invoked) focusApp(entry)
     dismissPopup(index)
   }
