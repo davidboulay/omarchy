@@ -450,9 +450,11 @@ function historyRows(raw, liveRows, normalUrgency, limit) {
 // claims that name.
 //
 // app_icon is optional in the notification spec and plenty of senders leave it
-// empty: libnotify 0.8 stopped passing `notify-send -i` through as app_icon
-// and moved it to a desktop-entry hint, and some apps never set it at all.
-// What such a notification does carry is app_name, and that name is nearly
+// empty. libnotify's notify-send is one: from 0.8.8, `-i` goes out as the
+// image-path hint, and app_icon is filled from it only for servers speaking a
+// spec older than 1.1 (quickshell advertises 1.2), so a notify-send toast has
+// no app_icon unless the caller also passes `-n`. Other apps never set it at
+// all. What such a notification does carry is app_name, and that name is nearly
 // always the Name= of an installed desktop entry, which knows exactly what the
 // app looks like. So the name is looked up rather than left as a blank tile.
 //
