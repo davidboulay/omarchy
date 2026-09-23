@@ -388,14 +388,15 @@ Item {
       // Notification already torn down by the server — fall through to focus.
       console.warn("invoke default failed:", e)
     }
-    // Reaching here means there was no action to run: either the sender
-    // registered no "default" action, or nothing live is left to invoke —
-    // a restored or history row has no sender even when the original had one.
-    // Not because chat apps skip the action: Slack's Notify carries
+    // If no default action was invoked, focus the sending app by class
+    // instead, which is what a click on a chat notification is reaching for
+    // anyway. That happens when the sender registered no "default" action,
+    // when nothing live is left to invoke — a restored or history row has no
+    // sender even when the original had one — or when the invocation above
+    // threw. Not because chat apps skip the action: Slack's Notify carries
     // actions ["default", "View"], so for the app most often clicked here the
     // action is present and, while the toast is live, is what opens the
-    // message. Focus the sending app by class instead, which is what a click
-    // on a chat notification is reaching for anyway.
+    // message. A successful invocation skips the focus and only dismisses.
     if (!invoked) focusApp(entry)
     dismissPopup(index)
   }
