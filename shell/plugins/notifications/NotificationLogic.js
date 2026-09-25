@@ -180,7 +180,9 @@ function shouldRenderCompactGlyph(glyph, iconSource, singleLineToast) {
   return String(glyph || "").length > 0 && String(iconSource || "").length === 0 && !!singleLineToast
 }
 
-function snapshotOf(notification, timestamp) {
+// Resolve while the notification is live, so persisted history keeps the icon.
+// Some senders (including GTK terminals) leave both app_name and app_icon empty.
+function snapshotOf(notification, timestamp, desktopEntries) {
   var n = notification || {}
   var id = n.id || 0
   var expireTimeout = Number(n.expireTimeout || 0)
@@ -188,8 +190,10 @@ function snapshotOf(notification, timestamp) {
   return {
     id: id,
     originalId: id,
-    app: n.appName || "",
-    appIcon: n.appIcon || "",
+    app: n.appName || n.desktopEntry || stringHint(n.hints, "desktop-entry"),
+    appIcon: n.appIcon || stringHint(n.hints, "image-path") || stringHint(n.hints, "image_path")
+      || appIconFor(n.desktopEntry || stringHint(n.hints, "desktop-entry"), desktopEntries)
+      || appIconFor(n.appName, desktopEntries),
     summary: String(n.summary || ""),
     body: n.body || "",
     image: n.image || "",
@@ -227,8 +231,8 @@ function popupRowChanged(row, updated) {
 // the popup it took over: the file name is the timestamp and id the popup was
 // first persisted under, and the restore, replace and archive paths all key
 // off that name. Only what the card draws comes from the updated object.
-function replacementSnapshot(notification, originalId, timestamp) {
-  var updated = snapshotOf(notification, timestamp)
+function replacementSnapshot(notification, originalId, timestamp, desktopEntries) {
+  var updated = snapshotOf(notification, timestamp, desktopEntries)
   updated.id = originalId
   updated.originalId = originalId
   return updated
@@ -446,28 +450,10 @@ function historyRows(raw, liveRows, normalUrgency, limit) {
   return out.slice(0, max)
 }
 
-// The icon of the desktop entry an app_name belongs to, or "" when no entry
-// claims that name.
-//
-// app_icon is optional in the notification spec and plenty of senders leave it
-// empty. libnotify's notify-send is one: from 0.8.8, `-i` goes out as the
-// image-path hint, and app_icon is filled from it only for servers speaking a
-// spec older than 1.1 (quickshell advertises 1.2), so a notify-send toast has
-// no app_icon unless the caller also passes `-n`. Other apps never set it at
-// all. What such a notification does carry is app_name, and that name is nearly
-// always the Name= of an installed desktop entry, which knows exactly what the
-// app looks like. So the name is looked up rather than left as a blank tile.
-//
-// Three keys per entry, because senders disagree about what app_name means:
-// the display name ("Solstice"), the desktop id ("dev.deedles.Trayscale",
-// whose Name= is the shorter "Trayscale"), and the startup WM class, which is
-// what a sender reaching for "the app's identifier" tends to reach for. A name
-// with spaces is tried hyphenated too, which is how "Google Chrome" finds
-// google-chrome.
-//
-// Deliberately no themed lookup on the name itself when that all misses: an
-// unconstrained theme lookup resolves an app called "Mail" or "Zoom" to a
-// stock action icon, and a confidently wrong face is worse than none.
+// Find an installed app's icon by desktop id, display name, or startup class.
+// Snapshots prefer desktop-entry when provided; old persisted cards can still
+// fall back by app name. Do not resolve arbitrary app names as themed icons:
+// names such as "Mail" or "Zoom" can otherwise select unrelated action icons.
 function appIconFor(appName, entries) {
   var wanted = String(appName || "").trim().toLowerCase()
   if (wanted.length === 0) return ""
