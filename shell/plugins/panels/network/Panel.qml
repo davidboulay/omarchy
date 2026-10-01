@@ -1906,7 +1906,7 @@ Panel {
       // Move the cursor here when the mouse enters; mouse leaving doesn't
       // clear it (so the cursor stays where the mouse last was and
       // subsequent j/k pick up from this row).
-      onPositionChanged: function(mouse) { root.selectFromPointer(row.index, false, row, mouse) }
+      onPositionChanged: function(mouse) { root.selectFromPointer(row.index, false, rowMouse, mouse) }
 
       onClicked: {
         if (!row.net) return
@@ -1989,7 +1989,7 @@ Panel {
           acceptedButtons: Qt.LeftButton
           enabled: row.canForget && !root.busy
           cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-          onPositionChanged: function(mouse) { root.selectFromPointer(row.index, true, row, mouse) }
+          onPositionChanged: function(mouse) { root.selectFromPointer(row.index, true, rightMouse, mouse) }
           onClicked: if (row.net) root.forget(row.net)
         }
 
