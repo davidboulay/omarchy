@@ -208,6 +208,10 @@ Panel {
       else scrollModel.insert(i, entries[i])
     }
 
+    // A key two BlueZ objects shared (one device on two adapters) survives the
+    // drop pass above, so trim whatever the alignment left past the end.
+    while (scrollModel.count > entries.length) scrollModel.remove(scrollModel.count - 1)
+
     // Refresh mutable fields in place; setProperty only notifies on a change.
     for (i = 0; i < entries.length && i < scrollModel.count; i++)
       for (var prop in entries[i]) scrollModel.setProperty(i, prop, entries[i][prop])

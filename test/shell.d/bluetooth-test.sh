@@ -139,6 +139,7 @@ assertEqual(bluetooth.scrollRowEntries([]).length, 0, 'bluetooth tolerates an em
 assert(/ListModel \{ id: scrollModel \}/.test(panelSource), 'bluetooth keeps the scroll list in a ListModel')
 assert(/model: scrollModel/.test(panelSource), 'bluetooth binds the view to the reconciled model')
 assert(!/model: root\.scrollRows/.test(panelSource), 'bluetooth never assigns a rebuilt array straight to the view')
+assert(/while \(scrollModel\.count > entries\.length\) scrollModel\.remove\(scrollModel\.count - 1\)/.test(panelSource), 'bluetooth trims rows a shared key left past the end of the reconciled list')
 assert(/function onScrollRowIndexChanged\(\)/.test(panelSource), 'bluetooth drives auto-scroll off the cursor, not off a currentIndex the view can overwrite')
 
 assertDeepEqual(
