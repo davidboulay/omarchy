@@ -140,7 +140,10 @@ assert(/ListModel \{ id: scrollModel \}/.test(panelSource), 'bluetooth keeps the
 assert(/model: scrollModel/.test(panelSource), 'bluetooth binds the view to the reconciled model')
 assert(!/model: root\.scrollRows/.test(panelSource), 'bluetooth never assigns a rebuilt array straight to the view')
 assert(/while \(scrollModel\.count > entries\.length\) scrollModel\.remove\(scrollModel\.count - 1\)/.test(panelSource), 'bluetooth trims rows a shared key left past the end of the reconciled list')
-assert(/function onScrollRowIndexChanged\(\)/.test(panelSource), 'bluetooth drives auto-scroll off the cursor, not off a currentIndex the view can overwrite')
+assert(/function onFocusedDeviceAddressChanged\(\) \{ Qt\.callLater\(deviceListView\.keepCurrentVisible\) \}/.test(panelSource), 'bluetooth auto-scrolls when the cursor lands on another device, not when discovery shifts its index')
+assert(/function onFocusSectionChanged\(\) \{ Qt\.callLater\(deviceListView\.keepCurrentVisible\) \}/.test(panelSource), 'bluetooth auto-scrolls when the focused device moves into another section, as on disconnect or pairing')
+assert(!/function onScrollRowIndexChanged\(\)/.test(panelSource), 'bluetooth does not follow a flat index that discovery can move under the cursor')
+assert(/currentIndex: root\.scrollRowIndex\n(\s*\/\/.*\n)*\s*highlightFollowsCurrentItem: false/.test(panelSource), 'bluetooth stops the list view scrolling to its current item when discovery moves it')
 
 assertDeepEqual(
   bluetooth.withPendingAction({ a: 'connecting' }, 'b', 'forgetting'),

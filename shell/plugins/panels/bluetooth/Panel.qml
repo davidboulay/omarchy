@@ -876,14 +876,17 @@ Panel {
 
           model: scrollModel
           currentIndex: root.scrollRowIndex
+          // Otherwise the view scrolls to its current item whenever discovery
+          // moves that row, which is the same drag keepCurrentVisible avoids.
+          highlightFollowsCurrentItem: false
           // Deferred by a turn: called straight out of the signal, the
-          // position does not take. Driven off root.scrollRowIndex rather than
-          // this.currentIndex because the view writes currentIndex itself on
-          // an insert or a move, which breaks the binding and would silently
-          // disable keyboard auto-scroll.
+          // position does not take. Driven off the focused device and section
+          // rather than any index: a discovery insert above the cursor shifts
+          // its flat index, which would drag the view back to that row mid-scroll.
           Connections {
             target: root
-            function onScrollRowIndexChanged() { Qt.callLater(deviceListView.keepCurrentVisible) }
+            function onFocusedDeviceAddressChanged() { Qt.callLater(deviceListView.keepCurrentVisible) }
+            function onFocusSectionChanged() { Qt.callLater(deviceListView.keepCurrentVisible) }
           }
           function keepCurrentVisible() {
             var i = root.scrollRowIndex
