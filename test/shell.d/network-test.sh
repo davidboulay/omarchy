@@ -211,6 +211,7 @@ assert(/ListModel \{ id: wifiModel \}/.test(panelSource), 'network keeps the wif
 assert(/model: wifiModel/.test(panelSource), 'network binds the view to the reconciled model')
 assert(!/model: root\.wifiStationAvailable \? root\.wifiNetworks : \[\]/.test(panelSource), 'network never assigns a rebuilt array straight to the view')
 assert(/function onSelectedIndexChanged\(\)/.test(panelSource), 'network drives auto-scroll off the cursor, not off a currentIndex the view can overwrite')
+assert(/var target = Math\.min\(anchored\.y \+ anchorOffset/.test(panelSource), 'network holds the top visible row in place when rows above it re-sort')
 
 // A reused delegate flips sectionTitle as rows re-sort, so a collapsing child
 // that binds its height back to its own implicitHeight becomes a live binding

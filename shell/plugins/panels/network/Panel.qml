@@ -702,6 +702,14 @@ Panel {
     var entries = Model.wifiRowEntries(wifiStationAvailable ? wifiNetworks : [])
     var i, j
 
+    // ListView shifts its view a row per row moved above it, so hold the top row
+    // in place, except at the top (new rows should show) or mid-scroll (a write stops a flick).
+    var anchorIndex = networkList.moving ? -1 : networkList.indexAt(networkList.width / 2, networkList.contentY)
+    if (anchorIndex < 0 && !networkList.moving) anchorIndex = networkList.indexAt(networkList.width / 2, networkList.contentY + networkList.spacing + 1)
+    var anchorItem = anchorIndex > 0 ? networkList.itemAtIndex(anchorIndex) : null
+    var anchorKey = anchorItem ? wifiModel.get(anchorIndex).key : ""
+    var anchorOffset = anchorItem ? networkList.contentY - anchorItem.y : 0
+
     // Drop networks that dropped out of the scan.
     for (i = wifiModel.count - 1; i >= 0; i--) {
       var gone = true
@@ -723,6 +731,19 @@ Panel {
     // Refresh mutable fields in place; setProperty only notifies on a change.
     for (i = 0; i < entries.length && i < wifiModel.count; i++)
       for (var prop in entries[i]) wifiModel.setProperty(i, prop, entries[i][prop])
+
+    if (anchorKey !== "") networkList.forceLayout()
+    for (i = 0; anchorKey !== "" && i < wifiModel.count; i++) {
+      if (wifiModel.get(i).key !== anchorKey) continue
+      var anchored = networkList.itemAtIndex(i)
+      if (!anchored) {
+        networkList.positionViewAtIndex(i, ListView.Beginning)
+      } else {
+        var target = Math.min(anchored.y + anchorOffset, networkList.originY + networkList.contentHeight - networkList.height)
+        if (Math.abs(networkList.contentY - target) >= 1) networkList.contentY = target
+      }
+      break
+    }
   }
 
   function wifiIconFor(strength) {
