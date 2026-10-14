@@ -367,7 +367,7 @@ Panel {
   // scroll, because Contain does not move the view until a row is clipped.
   PointerMoveGate {
     id: pointerGate
-    referenceItem: keyCatcher
+    referenceItem: panel.loadedContent
   }
 
   function disarmPointer() {

@@ -54,6 +54,9 @@ assert(/Component\.onDestruction: \{[\s\S]{0,400}owesDiscoveryStop = true[\s\S]{
 // a stationary pointer and fires containsMouse. Writing the cursor from that
 // signal let a synthetic hover overwrite the keyboard selection mid-navigation.
 assert(/PointerMoveGate \{\s*\n\s*id: pointerGate/.test(panelSource), 'bluetooth gates row hover behind real pointer movement')
+// The content is built on first open, so keyCatcher is out of scope here; without
+// a panel-level reference the gate measures in row coordinates and a scroll counts as a move.
+assert(/id: pointerGate\s*\n\s*referenceItem: panel\.loadedContent\b/.test(panelSource), 'bluetooth measures pointer movement against the loaded panel content')
 assert(/onPositionChanged: function\(mouse\) \{\s*\n\s*root\.selectFromPointer\(/.test(panelSource), 'bluetooth moves the cursor from pointer movement, not from hover state')
 assert(!/onContainsMouseChanged:[\s\S]{0,200}root\.selectedIndex = /.test(panelSource), 'bluetooth never sets the cursor straight out of containsMouse')
 assert(/function moveCursor\(delta\) \{\s*\n\s*disarmPointer\(\)/.test(panelSource), 'bluetooth disarms the pointer gate when the keyboard moves the cursor')
