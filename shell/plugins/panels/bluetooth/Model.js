@@ -107,8 +107,11 @@ function scrollRowKey(row) {
 // Flat list-model entries for the scrollable half of the panel. Device fields
 // are dev-prefixed because a delegate Item already owns `state`, and the
 // section title is resolved here so a delegate never has to look at its
-// neighbours.
-function scrollRowEntries(rows) {
+// neighbours. tr is an optional translate(key, english) from the QML side
+// (I18n.t); without it the English text stands, which is what the Node tests
+// assert.
+function scrollRowEntries(rows, tr) {
+  var t = typeof tr === "function" ? tr : function(key, english) { return english }
   var list = toArray(rows)
   var entries = []
   var previousSection = ""
@@ -124,7 +127,7 @@ function scrollRowEntries(rows) {
       key: scrollRowKey(row),
       section: row.section,
       indexInSection: row.indexInSection,
-      sectionTitle: opensSection ? (row.section === "known" ? "PAIRED" : "AVAILABLE") : "",
+      sectionTitle: opensSection ? (row.section === "known" ? t("bluetooth.paired", "PAIRED") : t("bluetooth.available", "AVAILABLE")) : "",
       devAddress: d.address || "",
       devName: d.name || "",
       devDeviceName: d.deviceName || "",
