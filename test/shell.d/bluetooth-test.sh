@@ -134,6 +134,11 @@ assertDeepEqual(
 )
 assertEqual(scrollEntries[0].devName, 'Speaker', 'bluetooth flattens device fields into dev-prefixed roles')
 assertEqual(scrollEntries[0].devState, -1, 'bluetooth avoids the bare state role that would collide with Item.state')
+assertDeepEqual(
+  bluetooth.scrollRowEntries(scrollRows, (key) => `<${key}>`).map((entry) => entry.sectionTitle),
+  ['<bluetooth.paired>', '', '<bluetooth.available>'],
+  'bluetooth translates section titles through the panel translator'
+)
 assertEqual(bluetooth.scrollRowEntries([]).length, 0, 'bluetooth tolerates an empty scroll list')
 
 assert(/ListModel \{ id: scrollModel \}/.test(panelSource), 'bluetooth keeps the scroll list in a ListModel')
